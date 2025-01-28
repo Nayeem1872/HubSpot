@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getHubspotAccessToken } from '../hubspot-callback/route';
 
 export async function POST(request: Request) {
   try {
@@ -6,11 +7,16 @@ export async function POST(request: Request) {
 
     const { email, firstName, lastName, address, city, zipCode, country } = body;
 
+    const accessToken = getHubspotAccessToken();
+    if (!accessToken) {
+      return NextResponse.json({ error: "HubSpot is not connected" }, { status: 400 });
+    }
+
     const response = await fetch('https://api.hubspot.com/crm/v3/objects/contacts', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.HUBSPOT_ACCESS_TOKEN}`, 
+        Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({
         properties: {
@@ -38,13 +44,18 @@ export async function POST(request: Request) {
 }
 export async function GET() {
   try {
+    const accessToken = getHubspotAccessToken();
+    if (!accessToken) {
+      return NextResponse.json({ error: { message: "HubSpot is not connected" } }, { status: 400 });
+    }
+
     const response = await fetch(
-      'https://api.hubspot.com/crm/v3/objects/contacts?properties=email,firstname,lastname,address,city,zip,country',
+      "https://api.hubspot.com/crm/v3/objects/contacts?properties=email,firstname,lastname,address,city,zip,country",
       {
-        method: 'GET',
+        method: "GET",
         headers: {
-          Authorization: `Bearer ${process.env.HUBSPOT_ACCESS_TOKEN}`, 
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
         },
       }
     );
@@ -57,6 +68,6 @@ export async function GET() {
     const data = await response.json();
     return NextResponse.json({ contacts: data.results });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch contacts' }, { status: 500 });
+    return NextResponse.json({ error: { message: "Failed to fetch contacts" } }, { status: 500 });
   }
 }

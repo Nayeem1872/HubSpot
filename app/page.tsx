@@ -1,165 +1,44 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import TableContact from "./components/Table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import AddContactDialog from "./components/AddContactDialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 export default function Home() {
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    address: "",
-    city: "",
-    zipCode: "",
-    country: "",
-  });
-  const [message, setMessage] = useState("");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
+  const HUBSPOT_OAUTH_URL = `https://app.hubspot.com/oauth/authorize?client_id=65f1d874-f9db-49fd-8d40-80d0697a5abf&redirect_uri=http://localhost:3000/api/hubspot-callback&scope=crm.objects.contacts.read%20crm.objects.contacts.write%20oauth`;
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setMessage("");
-
-    try {
-      const response = await fetch("/api/hubspot", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-
+  useEffect(() => {
+    const checkConnection = async () => {
+      const response = await fetch("/api/check-hubspot-connection");
       const result = await response.json();
-      if (response.ok) {
-        setMessage("Contact created successfully!");
-        setFormData({
-          firstName: "",
-          lastName: "",
-          email: "",
-          address: "",
-          city: "",
-          zipCode: "",
-          country: "",
-        });
-        setIsDialogOpen(false);
-      } else {
-        setMessage(`Error: ${result.error.message}`);
-      }
-    } catch (error) {
-      setMessage("Failed to create contact");
-    }
-  };
+      setIsConnected(result.isConnected);
+    };
+
+    checkConnection();
+  }, []);
 
   return (
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>Add Contact</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New Contact</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid gap-2">
-                <Label htmlFor="firstName">First Name</Label>
-                <Input
-                  id="firstName"
-                  name="firstName"
-                  value={formData.firstName}
-                  onChange={handleChange}
-                  placeholder="Enter first name"
-                  required
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="lastName">Last Name</Label>
-                <Input
-                  id="lastName"
-                  name="lastName"
-                  value={formData.lastName}
-                  onChange={handleChange}
-                  placeholder="Enter last name"
-                  required
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="Enter email address"
-                  required
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="address">Address</Label>
-                <Input
-                  id="address"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleChange}
-                  placeholder="Enter address"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="city">City</Label>
-                <Input
-                  id="city"
-                  name="city"
-                  value={formData.city}
-                  onChange={handleChange}
-                  placeholder="Enter city"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="zipCode">Zip Code</Label>
-                <Input
-                  id="zipCode"
-                  name="zipCode"
-                  value={formData.zipCode}
-                  onChange={handleChange}
-                  placeholder="Enter zip code"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="country">Country</Label>
-                <Input
-                  id="country"
-                  name="country"
-                  value={formData.country}
-                  onChange={handleChange}
-                  placeholder="Enter country"
-                />
-              </div>
-              <DialogFooter>
-                <Button type="submit">Save</Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+        {!isConnected ? (
+          <Button onClick={() => (window.location.href = HUBSPOT_OAUTH_URL)}>
+            Connect to HubSpot
+          </Button>
+        ) : (
+          <p className="text-green-500">Connected to HubSpot</p>
+        )}
       </div>
 
-      {message && <p className="text-green-500 mb-4">{message}</p>}
-
-      <TableContact />
+      {isConnected && (
+        <>
+          <div className="flex justify-between items-center mb-6">
+            <AddContactDialog />
+          </div>
+          <TableContact />
+        </>
+      )}
     </div>
   );
 }

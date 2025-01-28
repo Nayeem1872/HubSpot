@@ -3,6 +3,6 @@ import { getHubspotAccessToken } from "../hubspot-callback/route";
 
 export async function GET() {
   const token = getHubspotAccessToken();
-  const isConnected = !!token; // Check if the token is not null or undefined
+  const isConnected = !!token; 
   return NextResponse.json({ isConnected });
 }

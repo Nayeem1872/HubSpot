@@ -1,4 +1,3 @@
-// app/api/hubspot-callback/route.ts
 import { NextResponse } from "next/server";
 
 let hubspotAccessToken: string | null = null;
